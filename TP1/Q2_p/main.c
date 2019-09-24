@@ -35,12 +35,12 @@
 
 int main(int argc, char **argv)
 {
-	
+	//Récupération du descripteur de fichier à mapper
     int fd = open("test.txt", O_RDWR);
     printf("Le descripteur de fichier fd= %d\n", fd);
     
     struct stat fileStat;
-    //Récupération des informations sur le fichier test.txt
+    //Récupération des informations sur le fichier test.txt (sa taille)
     stat("test.txt", &fileStat);
     long fileSize= fileStat.st_size;
     printf("File size : %ld\n",fileSize);
@@ -51,44 +51,31 @@ int main(int argc, char **argv)
     printf("Adresse de la mmap: %p\n",mmappedData);
    
  /*----------------------------------------------------*/ 
-   //Inversion des octets du fichier
+   //Inversion des octets du fichier en les récupérant dans un tableau de manière décroissante
 	char* mmappedDatap=mmappedData;
 	//printf("%c\n",*mmappedDatap);
 	
 	char* invBuffer=NULL;
 	invBuffer = malloc(fileSize * sizeof(char));
    
+	printf("\nAffichage du contenu du fichier stocké en mémoire via mmap :\n");
     for(int i=0;i<fileSize;i++){
 		invBuffer[fileSize-i-1]=*mmappedDatap;
-		//printf("%c",*mmappedDatap);
+		printf("%c",*mmappedDatap);
 		mmappedDatap+=sizeof(char);
 	}
 	invBuffer[fileSize]='\0';
 	printf("\n");
 	
+	printf("\nAffichage du tableau invBUffer: \n");
 	for(int i=0;i<fileSize;i++){
 		printf("%c",invBuffer[i]);
 	}
-	//Copie dans la mémoire le fichier inversé à l'emplacement mémoire associé au fichier mappé
+	//Copie dans la mémoire le contenu inversé à l'emplacement mémoire associé au fichier mappé
 	memcpy(mmappedData,invBuffer,fileSize);
 
-	//Gestion d'erreur lors de la libération de l'espace mémoire
-	if(munmap(mmappedData,fileSize)==0)
-	{
-		printf("\nFree :mmap memory\n");
-	}
-	else
-	{
-		printf("Something went wrong with munmap()! %s\n", strerror(errno));
-	}
-	
-	//Vérifier l'inversion des octets
-	printf("\n\nVérification de l'inversion d'octets: \n");
-	system("cd TP_OS/TP1/Q2_p/;cat test.txt");
-	
-	
- /*---------------------------------------------------*/  
-    //Création d'un processus fils pour permettre de voir l'exécution du processsus père "mmap" dans la mémoire
+/*---------------------------------------------------*/  
+    //Création d'un processus fils pour permettre de voir la segementation de la mémoire pendant l'exécution du processsus père "mmap"
     int pid, status;
     pid=fork();
     
@@ -105,6 +92,24 @@ int main(int argc, char **argv)
 		printf("ceci ne sera jamais affiché");
     }
 /*---------------------------------------------------*/
+
+
+	//Gestion d'erreur lors de la libération de l'espace mémoire
+	if(munmap(mmappedData,fileSize)==0)
+	{
+		printf("\nFree :mmap memory\n");
+	}
+	else
+	{
+		printf("Something went wrong with munmap()! %s\n", strerror(errno));
+	}
+	
+	//Vérifier l'inversion des octets (il faut cloner TP_OS dans le répertoire racine de votre PC)
+	printf("\n\nVérification de l'inversion d'octets dans le fichier via 'cat': \n");
+	system("cat test.txt");
+	
+	
+ 
     
     
 
