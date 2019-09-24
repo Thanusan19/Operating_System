@@ -11,7 +11,7 @@
 
 int main(int argc, char **argv)
 {
-	//Récupération du descripteur de fichier à mapper
+    //Récupération du descripteur de fichier à mapper
     int fd = open("test.txt", O_RDWR);
     printf("Le descripteur de fichier fd= %d\n", fd);
     
@@ -27,59 +27,65 @@ int main(int argc, char **argv)
     printf("Adresse de la mmap: %p\n",mmappedData);
    
  /*----------------------------------------------------*/ 
-   //Inversion des octets du fichier en les récupérant dans un tableau de manière décroissante
-	char* mmappedDatap=mmappedData;
-	char* invBuffer=NULL;
-	invBuffer = malloc(fileSize * sizeof(char));
+    //Inversion des octets du fichier en les récupérant dans un tableau de manière décroissante
+    char* mmappedDatap=mmappedData;
+    char* invBuffer=NULL;
+    invBuffer = malloc(fileSize * sizeof(char));
    
-	printf("\nAffichage du contenu du fichier stocké en mémoire via mmap :\n");
-    for(int i=0;i<fileSize;i++){
-		invBuffer[fileSize-i-1]=*mmappedDatap;
-		printf("%c",*mmappedDatap);
-		mmappedDatap+=sizeof(char);
-	}
-	invBuffer[fileSize]='\0';
-	printf("\n");
+    printf("\nAffichage du contenu du fichier stocké en mémoire via mmap :\n");
+    for(int i=0;i<fileSize;i++)
+    {
+	invBuffer[fileSize-i-1]=*mmappedDatap;
+	printf("%c",*mmappedDatap);
+	mmappedDatap+=sizeof(char);
+    }
 	
-	printf("\nAffichage du tableau invBUffer: \n");
-	for(int i=0;i<fileSize;i++){
-		printf("%c",invBuffer[i]);
-	}
-	//Copie dans la mémoire le contenu inversé à l'emplacement mémoire associé au fichier mappé
-	memcpy(mmappedData,invBuffer,fileSize);
+    invBuffer[fileSize]='\0';
+    printf("\n");
+	
+    printf("\nAffichage du tableau invBUffer: \n");
+    for(int i=0;i<fileSize;i++)
+    {
+	printf("%c",invBuffer[i]);
+    }
+    //Copie dans la mémoire le contenu inversé à l'emplacement mémoire associé au fichier mappé
+    memcpy(mmappedData,invBuffer,fileSize);
 
 /*---------------------------------------------------*/  
     //Création d'un processus fils pour permettre de voir la segementation de la mémoire pendant l'exécution du processsus père "mmap"
     int pid, status;
     pid=fork();
     
-    if(pid!=0){ /*Code du père*/
-		printf("\n\nJe suis le père %d\n",getpid());
-		wait(&status);
-	}else{ /*Code du fils*/
-		printf("je suis le fils %d\n",getpid());
-		int ppid=getppid();
-		char buffer [50];
-		//Transformer ppid en un tableau "char" pour l'utiliser comme argument de execlp
-		sprintf(buffer, "%d", ppid);
-		execlp("pmap", "pmap","-X",buffer,NULL);
-		printf("ceci ne sera jamais affiché");
+    if(pid!=0)
+    { /*Code du père*/
+	printf("\n\nJe suis le père %d\n",getpid());
+	wait(&status);
+    }
+    else
+    { /*Code du fils*/
+	printf("je suis le fils %d\n",getpid());
+	int ppid=getppid();
+	char buffer [50];
+	//Transformer ppid en un tableau "char" pour l'utiliser comme argument de execlp
+	sprintf(buffer, "%d", ppid);
+	execlp("pmap", "pmap","-X",buffer,NULL);
+	printf("ceci ne sera jamais affiché");
     }
 /*---------------------------------------------------*/
 
-	//Gestion d'erreur lors de la libération de l'espace mémoire
-	if(munmap(mmappedData,fileSize)==0)
-	{
-		printf("\nFree :mmap memory\n");
-	}
-	else
-	{
-		printf("Something went wrong with munmap()! %s\n", strerror(errno));
-	}
+    //Gestion d'erreur lors de la libération de l'espace mémoire
+    if(munmap(mmappedData,fileSize)==0)
+    {
+ 	printf("\nFree :mmap memory\n");
+    }
+    else
+    {
+	printf("Something went wrong with munmap()! %s\n", strerror(errno));
+    }
 	
-	//Vérifier l'inversion des octets (il faut cloner TP_OS dans le répertoire racine de votre PC)
-	printf("\n\nVérification de l'inversion d'octets dans le fichier via 'cat': \n");
-	system("cat test.txt");
+    //Vérifier l'inversion des octets (il faut cloner TP_OS dans le répertoire racine de votre PC)
+    printf("\n\nVérification de l'inversion d'octets dans le fichier via 'cat': \n");
+    system("cat test.txt");
 	
-	return 0;
+    return 0;
 }
