@@ -47,7 +47,7 @@ void check_mem(void *dataAddr){
         printf("Success WD start: %#010lx \n",header->magic_number);
         long *wdEndAddr=dataAddr+ header->bloc_size;
         if(*wdEndAddr==MAGIC){
-            printf("Success WD end %#010lx \n",*wdEndAddr);
+            printf("Success WD end: %#010lx \n",*wdEndAddr);
         }
     }else{
         exit(EXIT_FAILURE);
@@ -62,15 +62,53 @@ void free_3is(freeBlocList *freeBlocList,void *dataAddr){
     freeBlocList->firstBloc=newFreeBloc;
 }
 
+/*Afficher la liste Chaînée*/
+void afficherListe(freeBlocList *liste){
+	if(liste==NULL){
+		exit(EXIT_FAILURE);
+	}
+	
+	//Pointeur de type Element
+	HEADER *actuel=liste->firstBloc;
+	
+	//Tant que le pointeur suivant de la liste chaîné n'est pas "NULL" on continue à lire les valeurs
+	while(actuel!=NULL){
+		printf(" %ld ",actuel->magic_number);
+		actuel= actuel-> ptr_next;
+	}
+	printf("NULL\n");
+}
+
 int main(){
+
+    printf("\n/******************************/");
+    printf("Première allocation");
+    printf("/******************************/\n");
 
     void *dataAddr=malloc_3is(10);
     printf("Memory Bloc Adress: %p \n",dataAddr);
     check_mem(dataAddr);
 
-    freeBlocList *freeBlocList=NULL;
+    freeBlocList *freeBlocList=dataAddr-sizeof(HEADER);
     free_3is(freeBlocList,dataAddr);
 
+    printf("\n/******************************/");
+    printf("Deuxième allocation");
+    printf("/******************************/\n");
+
+    void *dataAddr2=malloc_3is(100);
+    printf("Memory Bloc Adress: %p \n",dataAddr2);
+    check_mem(dataAddr2);
+    free_3is(freeBlocList,dataAddr2);
+
+    //afficherListe(freeBlocList);
+    //Tant que le pointeur suivant de la liste chaîné n'est pas "NULL" on continue à lire les valeurs
+    HEADER *actuel=dataAddr-sizeof(HEADER);
+	while(actuel!=NULL){
+		printf(" %ld ",actuel->magic_number);
+		actuel= actuel-> ptr_next;
+	}
+	printf("NULL\n");
 
     return 0;
 }
