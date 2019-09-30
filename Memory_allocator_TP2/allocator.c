@@ -98,21 +98,6 @@ int main(){
     newFreeBloc->ptr_next=NULL;
 
 
-    /*HEADER *newFreeBloc2=dataAddr2-sizeof(HEADER);
-    newFreeBloc2->ptr_next=freeBlocList->firstBloc;
-    freeBlocList->firstBloc=newFreeBloc2;*/
-    //void *dataAddr2=malloc_3is(100);
-    //free_3is(freeBlocList,dataAddr2);
-    
-
-    //afficherListe(freeBlocList);
-
-
-
-    
-
-    //free_3is(freeBlocList,dataAddr);
-
     printf("\n/******************************/");
     printf("Deuxième allocation");
     printf("/******************************/\n");
@@ -120,12 +105,14 @@ int main(){
     void *dataAddr2=malloc_3is(100);
     free_3is(freeBlocList,dataAddr2);
 
+
     printf("\n/******************************/");
-    printf("Deuxième allocation");
+    printf("Troisième allocation");
     printf("/******************************/\n");
 
     void *dataAddr3=malloc_3is(200);
     free_3is(freeBlocList,dataAddr3);
+
 
     printf("\n/******************************/");
     printf("Afficher la liste Chaînée");
@@ -137,20 +124,6 @@ int main(){
 		newFreeBloc= newFreeBloc-> ptr_next;
 	}
 	printf("NULL\n");
-
-    /*void *dataAddr2=malloc_3is(100);
-    printf("Memory Bloc Adress: %p \n",dataAddr2);
-    check_mem(dataAddr2);
-    free_3is(freeBlocList,dataAddr2);*/
-
-    //afficherListe(freeBlocList);
-    //Tant que le pointeur suivant de la liste chaîné n'est pas "NULL" on continue à lire les valeurs
-    /*HEADER *actuel=dataAddr-sizeof(HEADER);
-	while(actuel!=NULL){
-		printf(" %ld ",actuel->magic_number);
-		actuel= actuel-> ptr_next;
-	}
-	printf("NULL\n");*/
 
     return 0;
 }
