@@ -55,9 +55,12 @@ void check_mem(void *dataAddr){
 }
 
 void free_3is(freeBlocList *freeBlocList,void *dataAddr){
-    //HEADER *header=dataAddr-sizeof(HEADER);
+    /*//HEADER *header=dataAddr-sizeof(HEADER);
     HEADER *newFreeBloc=dataAddr-sizeof(HEADER);
 
+    newFreeBloc->ptr_next=freeBlocList->firstBloc;
+    freeBlocList->firstBloc=newFreeBloc;*/
+    HEADER *newFreeBloc=dataAddr-sizeof(HEADER);
     newFreeBloc->ptr_next=freeBlocList->firstBloc;
     freeBlocList->firstBloc=newFreeBloc;
 }
@@ -69,12 +72,11 @@ void afficherListe(freeBlocList *liste){
 	}
 	
 	//Pointeur de type Element
-	HEADER *actuel=liste->firstBloc;
-	
+    HEADER *newFreeBloc=liste->firstBloc;
 	//Tant que le pointeur suivant de la liste chaîné n'est pas "NULL" on continue à lire les valeurs
-	while(actuel!=NULL){
-		printf(" %ld ",actuel->magic_number);
-		actuel= actuel-> ptr_next;
+	while(newFreeBloc!=NULL){
+		printf(" %ld ",newFreeBloc->bloc_size);
+		newFreeBloc= newFreeBloc-> ptr_next;
 	}
 	printf("NULL\n");
 }
@@ -90,25 +92,65 @@ int main(){
     check_mem(dataAddr);
 
     freeBlocList *freeBlocList=dataAddr-sizeof(HEADER);
-    free_3is(freeBlocList,dataAddr);
+    freeBlocList->firstBloc=dataAddr-sizeof(HEADER);
+
+    HEADER *newFreeBloc=dataAddr-sizeof(HEADER);
+    newFreeBloc->ptr_next=NULL;
+
+
+    /*HEADER *newFreeBloc2=dataAddr2-sizeof(HEADER);
+    newFreeBloc2->ptr_next=freeBlocList->firstBloc;
+    freeBlocList->firstBloc=newFreeBloc2;*/
+    //void *dataAddr2=malloc_3is(100);
+    //free_3is(freeBlocList,dataAddr2);
+    
+
+    //afficherListe(freeBlocList);
+
+
+
+    
+
+    //free_3is(freeBlocList,dataAddr);
 
     printf("\n/******************************/");
     printf("Deuxième allocation");
     printf("/******************************/\n");
 
     void *dataAddr2=malloc_3is(100);
+    free_3is(freeBlocList,dataAddr2);
+
+    printf("\n/******************************/");
+    printf("Deuxième allocation");
+    printf("/******************************/\n");
+
+    void *dataAddr3=malloc_3is(200);
+    free_3is(freeBlocList,dataAddr3);
+
+    printf("\n/******************************/");
+    printf("Afficher la liste Chaînée");
+    printf("/******************************/\n");
+
+    //Afficher la liste Chaînée
+	while(newFreeBloc!=NULL){
+		printf(" %ld ",newFreeBloc->bloc_size);
+		newFreeBloc= newFreeBloc-> ptr_next;
+	}
+	printf("NULL\n");
+
+    /*void *dataAddr2=malloc_3is(100);
     printf("Memory Bloc Adress: %p \n",dataAddr2);
     check_mem(dataAddr2);
-    free_3is(freeBlocList,dataAddr2);
+    free_3is(freeBlocList,dataAddr2);*/
 
     //afficherListe(freeBlocList);
     //Tant que le pointeur suivant de la liste chaîné n'est pas "NULL" on continue à lire les valeurs
-    HEADER *actuel=dataAddr-sizeof(HEADER);
+    /*HEADER *actuel=dataAddr-sizeof(HEADER);
 	while(actuel!=NULL){
 		printf(" %ld ",actuel->magic_number);
 		actuel= actuel-> ptr_next;
 	}
-	printf("NULL\n");
+	printf("NULL\n");*/
 
     return 0;
 }
