@@ -13,8 +13,19 @@ typedef struct HEADER_TAG {
 
 
 /*Allocation d'un bloc mémoire*/
-void *malloc_3is(int nbrByte){
+void *malloc_3is(int nbrByte,HEADER *freeBlocList){
     int nbrByteTotal=sizeof(HEADER)+nbrByte+sizeof(MAGIC);
+
+    long freeBlocSize=0;
+    while(freeBlocList!=NULL){
+		freeBlocSize=freeBlocList->bloc_size +sizeof(HEADER)+sizeof(MAGIC);
+        if(freeBlocSize==nbrByteTotal){
+            printf("Bloc start Adress (Header+data+WD): %p \n",freeBlocList);
+
+            return freeBlocList;
+        }
+		freeBlocList= freeBlocList-> ptr_next;
+	}
     
     HEADER *newSpace=sbrk(nbrByteTotal);
     if(newSpace==(void*) -1){
@@ -25,7 +36,7 @@ void *malloc_3is(int nbrByte){
     //Espace alloué pour l'utilisateur
     newSpace->bloc_size=nbrByte;
     newSpace->magic_number=MAGIC;
-    printf("Total Bloc start Adress: %p \n",newSpace);
+    printf("Bloc start Adress (Header+data+WD): %p \n",newSpace);
 
     void *dataAddr=newSpace;
     dataAddr=dataAddr + sizeof(HEADER);
@@ -70,11 +81,12 @@ int main(){
     printf("Première allocation");
     printf("/******************************/\n");
 
-    void *dataAddr=malloc_3is(10);
+    HEADER *freeBlocList=NULL;
+
+    void *dataAddr=malloc_3is(10,freeBlocList);
     printf("Memory Bloc Adress: %p \n",dataAddr);
     check_mem(dataAddr);
 
-    HEADER *freeBlocList=NULL;
     //freeBlocList->firstBloc=dataAddr-sizeof(HEADER);
     //freeBlocList->firstBloc->ptr_next=NULL;
     freeBlocList=free_3is(freeBlocList,dataAddr);
@@ -87,7 +99,7 @@ int main(){
     printf("Deuxième allocation");
     printf("/******************************/\n");
 
-    void *dataAddr2=malloc_3is(100);
+    void *dataAddr2=malloc_3is(100,freeBlocList);
     freeBlocList=free_3is(freeBlocList,dataAddr2);
 
 
@@ -95,7 +107,7 @@ int main(){
     printf("Troisième allocation");
     printf("/******************************/\n");
 
-    void *dataAddr3=malloc_3is(200);
+    void *dataAddr3=malloc_3is(200,freeBlocList);
     freeBlocList=free_3is(freeBlocList,dataAddr3);
 
 
@@ -103,7 +115,7 @@ int main(){
     printf("Quatrième allocation");
     printf("/******************************/\n");
 
-    void *dataAddr4=malloc_3is(300);
+    void *dataAddr4=malloc_3is(400,freeBlocList);
     freeBlocList=free_3is(freeBlocList,dataAddr4);
 
 
