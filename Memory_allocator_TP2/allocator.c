@@ -10,6 +10,7 @@ typedef struct HEADER_TAG {
 } HEADER;
 
 /********Variable Globale*********/
+//Liste chaînée récupérant les espaces mémoires libérés après un free
 HEADER *freeBlocList=NULL;
 
 
