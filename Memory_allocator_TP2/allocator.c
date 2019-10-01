@@ -9,24 +9,49 @@ typedef struct HEADER_TAG {
     long magic_number; /* 0x0123456789ABCDEFL --> 8 octets "long"*/
 } HEADER;
 
+/********Variable Globale*********/
+HEADER *freeBlocList=NULL;
 
 
 
 /*Allocation d'un bloc mémoire*/
-void *malloc_3is(int nbrByte,HEADER *freeBlocList){
+void *malloc_3is(int nbrByte){
     int nbrByteTotal=sizeof(HEADER)+nbrByte+sizeof(MAGIC);
-
+/*--------------------------------------------------------*/
     long freeBlocSize=0;
-    while(freeBlocList!=NULL){
-		freeBlocSize=freeBlocList->bloc_size +sizeof(HEADER)+sizeof(MAGIC);
+    HEADER *previous, *current;
+    if(freeBlocList!=NULL){
+        freeBlocSize=freeBlocList->bloc_size +sizeof(HEADER)+sizeof(MAGIC);
         if(freeBlocSize==nbrByteTotal){
             printf("Bloc start Adress (Header+data+WD): %p \n",freeBlocList);
-
-            return freeBlocList;
+            current=freeBlocList;
+            freeBlocList=freeBlocList->ptr_next;
+        
+            return (void*) current+sizeof(HEADER);
         }
-		freeBlocList= freeBlocList-> ptr_next;
-	}
+        else{
+            current=freeBlocList->ptr_next;
+            previous=freeBlocList;
+            while(current!=NULL){
+                freeBlocSize=current->bloc_size +sizeof(HEADER)+sizeof(MAGIC);
+                if(freeBlocSize==nbrByteTotal){
+                    printf("Bloc start Adress (Header+data+WD): %p \n",current);
+                    previous->ptr_next=current->ptr_next;
+                    printf("current :%ld \n",current->bloc_size);
+
+                    return (void*) current+sizeof(HEADER);
+                }
+                previous=current;
+                current=current->ptr_next;
+            }
+            
+        }
+        
+    }
+
     
+ /*-------------------------------------------------*/
+
     HEADER *newSpace=sbrk(nbrByteTotal);
     if(newSpace==(void*) -1){
         exit(EXIT_FAILURE);
@@ -60,9 +85,12 @@ void check_mem(void *dataAddr){
     }
 }
 
-void *free_3is(HEADER *freeBlocList,void *dataAddr){
+//Enregistrer la méoire libéré par le process dans une liste chaînée
+void *free_3is(void *dataAddr){
+   
    
     if(freeBlocList==NULL){
+        //S'il n'y a aucun élément dans la liste Chaîné
         freeBlocList=dataAddr-sizeof(HEADER);
     }else
     {
@@ -81,42 +109,39 @@ int main(){
     printf("Première allocation");
     printf("/******************************/\n");
 
-    HEADER *freeBlocList=NULL;
 
-    void *dataAddr=malloc_3is(10,freeBlocList);
+    void *dataAddr=malloc_3is(10);
     printf("Memory Bloc Adress: %p \n",dataAddr);
     check_mem(dataAddr);
 
-    //freeBlocList->firstBloc=dataAddr-sizeof(HEADER);
-    //freeBlocList->firstBloc->ptr_next=NULL;
-    freeBlocList=free_3is(freeBlocList,dataAddr);
-
-    //HEADER *newFreeBloc=dataAddr-sizeof(HEADER);
-    //newFreeBloc->ptr_next=NULL;
+    
+    freeBlocList=free_3is(dataAddr);
 
 
     printf("\n/******************************/");
     printf("Deuxième allocation");
     printf("/******************************/\n");
 
-    void *dataAddr2=malloc_3is(100,freeBlocList);
-    freeBlocList=free_3is(freeBlocList,dataAddr2);
+    void *dataAddr2=malloc_3is(100);
+    freeBlocList=free_3is(dataAddr2);
 
 
     printf("\n/******************************/");
     printf("Troisième allocation");
     printf("/******************************/\n");
 
-    void *dataAddr3=malloc_3is(200,freeBlocList);
-    freeBlocList=free_3is(freeBlocList,dataAddr3);
+    void *dataAddr3=malloc_3is(200);
+    freeBlocList=free_3is(dataAddr3);
 
 
     printf("\n/******************************/");
     printf("Quatrième allocation");
     printf("/******************************/\n");
 
-    void *dataAddr4=malloc_3is(400,freeBlocList);
-    freeBlocList=free_3is(freeBlocList,dataAddr4);
+    void *dataAddr4=malloc_3is(100);
+    HEADER *test=dataAddr4-sizeof(HEADER);
+    printf("%ld\n",test->bloc_size);
+    freeBlocList=free_3is(dataAddr4);
 
 
     printf("\n/******************************/");
