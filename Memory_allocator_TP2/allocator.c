@@ -18,25 +18,26 @@ HEADER *freeBlocList=NULL;
 /*Allocation d'un bloc mémoire-> fonction "malloc()"*/
 /****************************************************/
 void *malloc_3is(int nbrByte){
-    /*Nombre d'espace nécessaire en plus de l'espace demander par le process
+    /*Taille d'espace nécessaire en plus de l'espace demandé par le process
     HEADER + DATA + WD  (HEADER= ptr_nxt + size + WD)*/
     int nbrByteTotal=sizeof(HEADER)+nbrByte+sizeof(MAGIC);
 /*--------------------------------------------------------*/
+    /***Première possibilité : teste si un bloc mémoire libéré de la bonne taille a déjà été alloué auparavant***/
     long freeBlocSize=0;
     HEADER *previous, *current;
-    if(freeBlocList!=NULL){//Teste pour savoir si la liste chaîné pointe au moins vers un Bloc mémoire libéré
+    if(freeBlocList!=NULL){//Teste pour savoir si la liste chaînée contient au moins un pointeur vers un bloc mémoire libéré
         freeBlocSize=freeBlocList->bloc_size +sizeof(HEADER)+sizeof(MAGIC);
-
+	
+	//Vérifie que le dernier bloc stocké dans la liste à le même nombre d'octet que celui demandé par le processus 
         if(freeBlocSize==nbrByteTotal){
-        //Dernier bloc stocké dans la liste : le même nombre d'octet que ceux demander par le processus 
             printf("Bloc start Adress (Header+data+WD): %p \n",freeBlocList);
             current=freeBlocList;
             freeBlocList=freeBlocList->ptr_next;
-        
             return (void*) current+sizeof(HEADER);
         }
+	/*Parcours sur le reste de la liste chaînée, nécessité du bloc précédent le bloc avec le bon nombre d'octet s'il existe d'où la 
+	nécessité du test précédent fait séparément*/
         else{
-            //Si le nombre d'octet demander par le process correspond à un bloc mémoire précédamment libéré et ayant le même nombre de octet
             current=freeBlocList->ptr_next; 
             previous=freeBlocList; 
             while(current!=NULL){
@@ -46,7 +47,7 @@ void *malloc_3is(int nbrByte){
                     previous->ptr_next=current->ptr_next;// Permet de supprimer le "current bloc" de la liste chaînée en reliant le pointeur précédent du"current bloc" avec le pointeur suivant 
                     printf("current :%ld \n",current->bloc_size);
 
-                    //"current" sera renoyé comme addresse de bloc mémoire pour l'espace en octet demandée --> décalé du header pour pointer sur l'espace DATA
+                    //"current" sera renvoyé comme adresse de bloc mémoire pour l'espace en octet demandé --> décalé du header pour pointer sur l'espace DATA
                     return (void*) current+sizeof(HEADER);
                 }
                 previous=current;
@@ -57,22 +58,22 @@ void *malloc_3is(int nbrByte){
 
     
  /*-------------------------------------------------*/
-    //Demande d'espace à allouer dans la mémoire au dessus du bloc HEAP
+    /***Deuxième possibilité : demande d'espace à allouer dans la mémoire au dessus du bloc HEAP***/
     HEADER *newSpace=sbrk(nbrByteTotal);
     if(newSpace==(void*) -1){
         exit(EXIT_FAILURE);
     }
 
     newSpace->ptr_next=NULL;
-    //Espace alloué pour l'utilisateur -> DATA (sans tenir compte du header et WatchDog MAGIC number)
+    //Espace alloué pour l'utilisateur -> DATA (sans tenir compte du header, du WatchDog et du MAGIC number)
     newSpace->bloc_size=nbrByte;
     newSpace->magic_number=MAGIC;
     printf("Bloc start Adress (Header+data+WD): %p \n",newSpace);
 
-    void *dataAddr=newSpace; //Caster une variable "HEADER" en "void"
+    void *dataAddr=newSpace; //Caster une variable "HEADER" en "void" pour effectuer un décalage sur l'adresse correctement
     dataAddr=dataAddr + sizeof(HEADER); //Décalage de l'adresse sur la zone utilisable par l'utilisateur
 
-    long *wdEndAddr=dataAddr+nbrByte; //lecture du nombre MAGIC sur les 8 deniers octets de l'espace alloué
+    long *wdEndAddr=dataAddr+nbrByte; //Lecture du nombre MAGIC sur les 8 derniers octets de l'espace alloué
     *wdEndAddr=MAGIC;
     printf("%#010lx \n",*wdEndAddr);
     return dataAddr; //Retourner l'adresse de l'espace utilisable par l'utilisateur -> DATA
@@ -98,15 +99,15 @@ void check_mem(void *dataAddr){
 /* Enregistrer la mémoire libérée par le process dans une liste chaînée*/
 /***********************************************************************/
 void *free_3is(void *dataAddr){
-    //"freeBlocLIst" --> variable globale = pointeur de type HEADER
+    //"freeBlocList" --> variable globale = pointeur de type HEADER
+    //Initialisation dans le cas où aucun élément est dans la liste chaînée
     if(freeBlocList==NULL){
-        //S'il n'y a aucun élément dans la liste Chaîné
         freeBlocList=dataAddr-sizeof(HEADER);
-    }else
-    {
+    }
+    else{
         HEADER *newFreeBloc=dataAddr-sizeof(HEADER);
-        newFreeBloc->ptr_next=freeBlocList;//pointeur de la liste actuel est déplacé vers le "ptr_next" du nouveau bloc à ajouter à la liste Chaînéé
-        freeBlocList=newFreeBloc;//le pointeur de la liste chaînée pointe sur l'adresse de début du nouveau bloc mémoire à garder en réserve
+        newFreeBloc->ptr_next=freeBlocList;//Pointeur de la liste actuelle est déplacé vers le "ptr_next" du nouveau bloc à ajouter à la liste chaînée
+        freeBlocList=newFreeBloc;//Pointeur de la liste chaînée pointe sur l'adresse de début du nouveau bloc mémoire
     }
     return freeBlocList; //Renvoie l'adresse de début de la liste chaînée
     
@@ -114,19 +115,14 @@ void *free_3is(void *dataAddr){
 
 
 int main(){
-
     printf("\n/******************************/");
     printf("Première allocation");
     printf("/******************************/\n");
 
-
     void *dataAddr=malloc_3is(10);
     printf("Memory Bloc Adress: %p \n",dataAddr);
     check_mem(dataAddr);
-
-    
     freeBlocList=free_3is(dataAddr);
-
 
     printf("\n/******************************/");
     printf("Deuxième allocation");
@@ -135,7 +131,6 @@ int main(){
     void *dataAddr2=malloc_3is(100);
     freeBlocList=free_3is(dataAddr2);
 
-
     printf("\n/******************************/");
     printf("Troisième allocation");
     printf("/******************************/\n");
@@ -143,22 +138,18 @@ int main(){
     void *dataAddr3=malloc_3is(200);
     freeBlocList=free_3is(dataAddr3);
 
-
     printf("\n/******************************/");
     printf("Quatrième allocation");
     printf("/******************************/\n");
 
     void *dataAddr4=malloc_3is(100);
-    //HEADER *test=dataAddr4-sizeof(HEADER);
-    //printf("%ld\n",test->bloc_size);
     freeBlocList=free_3is(dataAddr4);
-
 
     printf("\n/******************************/");
     printf("Afficher la liste Chaînée");
     printf("/******************************/\n");
 
-    //Afficher la liste Chaînée
+    //Afficher la liste chaînée
 	while(freeBlocList!=NULL){
 		printf(" %ld ",freeBlocList->bloc_size);
 		freeBlocList= freeBlocList-> ptr_next;
