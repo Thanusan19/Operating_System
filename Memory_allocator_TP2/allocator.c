@@ -27,7 +27,7 @@ void *malloc_3is(int nbrByte){
         freeBlocSize=freeBlocList->bloc_size +sizeof(HEADER)+sizeof(MAGIC);
 
         if(freeBlocSize==nbrByteTotal){
-        //Si le dernier bloc stocké dans la liste a le même nombre d'octet que ceux demander par le processus 
+        //Dernier bloc stocké dans la liste : le même nombre d'octet que ceux demander par le processus 
             printf("Bloc start Adress (Header+data+WD): %p \n",freeBlocList);
             current=freeBlocList;
             freeBlocList=freeBlocList->ptr_next;
@@ -56,33 +56,36 @@ void *malloc_3is(int nbrByte){
 
     
  /*-------------------------------------------------*/
-
+    //Demande d'espace à allouer dans la mémoire au dessus du bloc HEAP
     HEADER *newSpace=sbrk(nbrByteTotal);
     if(newSpace==(void*) -1){
         exit(EXIT_FAILURE);
     }
 
     newSpace->ptr_next=NULL;
-    //Espace alloué pour l'utilisateur
+    //Espace alloué pour l'utilisateur -> DATA (sans tenir compte du header et WatchDog MAGIC number)
     newSpace->bloc_size=nbrByte;
     newSpace->magic_number=MAGIC;
     printf("Bloc start Adress (Header+data+WD): %p \n",newSpace);
 
-    void *dataAddr=newSpace;
-    dataAddr=dataAddr + sizeof(HEADER);
+    void *dataAddr=newSpace; //Caster une variable "HEADER" en "void"
+    dataAddr=dataAddr + sizeof(HEADER); //Décalage de l'adresse sur la zone utilisable par l'utilisateur
 
-    long *wdEndAddr=dataAddr+nbrByte;
+    long *wdEndAddr=dataAddr+nbrByte; //lecture du nombre MAGIC sur les 8 deniers octets de l'espace alloué
     *wdEndAddr=MAGIC;
     printf("%#010lx \n",*wdEndAddr);
-    return dataAddr;
+    return dataAddr; //Retourner l'adresse de l'espace utilisable par l'utilisateur -> DATA
 }
 
+/***************************************************/
+/*Vérification d'un éventuel débordement de mémoire*/
+/***************************************************/
 void check_mem(void *dataAddr){
     HEADER *header=dataAddr-sizeof(HEADER);
-    if(header->magic_number==MAGIC){
+    if(header->magic_number==MAGIC){ //Vérifier le WatchDog en début de la zone DATA
         printf("Success WD start: %#010lx \n",header->magic_number);
         long *wdEndAddr=dataAddr+ header->bloc_size;
-        if(*wdEndAddr==MAGIC){
+        if(*wdEndAddr==MAGIC){//Vérifier le WatchDog en fin de la zone DATA
             printf("Success WD end: %#010lx \n",*wdEndAddr);
         }
     }else{
@@ -90,20 +93,21 @@ void check_mem(void *dataAddr){
     }
 }
 
-//Enregistrer la méoire libéré par le process dans une liste chaînée
+/***********************************************************************/
+/* Enregistrer la mémoire libérée par le process dans une liste chaînée*/
+/***********************************************************************/
 void *free_3is(void *dataAddr){
-   
-   
+    //"freeBlocLIst" --> variable globale = pointeur de type HEADER
     if(freeBlocList==NULL){
         //S'il n'y a aucun élément dans la liste Chaîné
         freeBlocList=dataAddr-sizeof(HEADER);
     }else
     {
         HEADER *newFreeBloc=dataAddr-sizeof(HEADER);
-        newFreeBloc->ptr_next=freeBlocList;
-        freeBlocList=newFreeBloc;
+        newFreeBloc->ptr_next=freeBlocList;//pointeur de la liste actuel est déplacé vers le "ptr_next" du nouveau bloc à ajouter à la liste Chaînéé
+        freeBlocList=newFreeBloc;//le pointeur de la liste chaînée pointe sur l'adresse de début du nouveau bloc mémoire à garder en réserve
     }
-    return freeBlocList;
+    return freeBlocList; //Renvoie l'adresse de début de la liste chaînée
     
 }
 
@@ -144,8 +148,8 @@ int main(){
     printf("/******************************/\n");
 
     void *dataAddr4=malloc_3is(100);
-    HEADER *test=dataAddr4-sizeof(HEADER);
-    printf("%ld\n",test->bloc_size);
+    //HEADER *test=dataAddr4-sizeof(HEADER);
+    //printf("%ld\n",test->bloc_size);
     freeBlocList=free_3is(dataAddr4);
 
 
@@ -154,13 +158,11 @@ int main(){
     printf("/******************************/\n");
 
     //Afficher la liste Chaînée
-    //HEADER *newFreeBloc=freeBlocList->firstBloc;
 	while(freeBlocList!=NULL){
 		printf(" %ld ",freeBlocList->bloc_size);
 		freeBlocList= freeBlocList-> ptr_next;
 	}
 	printf("NULL\n");
-    //afficherListe(freeBlocList);
 
     return 0;
 }
