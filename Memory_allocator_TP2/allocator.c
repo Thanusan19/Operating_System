@@ -13,16 +13,21 @@ typedef struct HEADER_TAG {
 HEADER *freeBlocList=NULL;
 
 
-
-/*Allocation d'un bloc mémoire*/
+/****************************************************/
+/*Allocation d'un bloc mémoire-> fonction "malloc()"*/
+/****************************************************/
 void *malloc_3is(int nbrByte){
+    /*Nombre d'espace nécessaire en plus de l'espace demander par le process
+    HEADER + DATA + WD  (HEADER= ptr_nxt + size + WD)*/
     int nbrByteTotal=sizeof(HEADER)+nbrByte+sizeof(MAGIC);
 /*--------------------------------------------------------*/
     long freeBlocSize=0;
     HEADER *previous, *current;
-    if(freeBlocList!=NULL){
+    if(freeBlocList!=NULL){//Teste pour savoir si la liste chaîné pointe au moins vers un Bloc mémoire libéré
         freeBlocSize=freeBlocList->bloc_size +sizeof(HEADER)+sizeof(MAGIC);
+
         if(freeBlocSize==nbrByteTotal){
+        //Si le dernier bloc stocké dans la liste a le même nombre d'octet que ceux demander par le processus 
             printf("Bloc start Adress (Header+data+WD): %p \n",freeBlocList);
             current=freeBlocList;
             freeBlocList=freeBlocList->ptr_next;
@@ -30,23 +35,23 @@ void *malloc_3is(int nbrByte){
             return (void*) current+sizeof(HEADER);
         }
         else{
-            current=freeBlocList->ptr_next;
-            previous=freeBlocList;
+            //Si le nombre d'octet demander par le process correspond à un bloc mémoire précédamment libéré et ayant le même nombre de octet
+            current=freeBlocList->ptr_next; 
+            previous=freeBlocList; 
             while(current!=NULL){
                 freeBlocSize=current->bloc_size +sizeof(HEADER)+sizeof(MAGIC);
                 if(freeBlocSize==nbrByteTotal){
                     printf("Bloc start Adress (Header+data+WD): %p \n",current);
-                    previous->ptr_next=current->ptr_next;
+                    previous->ptr_next=current->ptr_next;// Permet de supprimer le "current bloc" de la liste chaînée en reliant le pointeur précédent du"current bloc" avec le pointeur suivant 
                     printf("current :%ld \n",current->bloc_size);
 
+                    //"current" sera renoyé comme addresse de bloc mémoire pour l'espace en octet demandée --> décalé du header pour pointer sur l'espace DATA
                     return (void*) current+sizeof(HEADER);
                 }
                 previous=current;
                 current=current->ptr_next;
             }
-            
         }
-        
     }
 
     
