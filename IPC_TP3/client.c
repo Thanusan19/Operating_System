@@ -1,4 +1,6 @@
 #include "segdef.h"
+#include <signal.h>
+
 
 int shmid, semid;
 segment *seg;
@@ -37,47 +39,70 @@ void init()
 int main()
 {	
 	init();
+	int forkNumber=2;
 	
-	int cmptRequete=1;
-	int nbRequest=50;
-	while(cmptRequete<=nbRequest)
+	for (int i = 0; i < forkNumber; i++)
 	{
-		acq_sem(semid, seg_dispo);
+		int pid;
+		pid=fork();
+		
 
-		seg->tty=getpid();
-		seg->req=cmptRequete;
-		long moy=0;
-		for(int i=0;i<maxval;i++)
-		{
-			seg->tab[i]=getrand();
-			moy+=seg->tab[i];
-		}
-		moy/=maxval;
+		if(pid>0){ //le père
+			int cmptRequete=1;
+			int nbRequest=1;
 
-		acq_sem(semid, seg_init);
+			printf("Client pid : %d \n",pid);
+			printf("Client Number : %d \n",i);
+			
+			while(cmptRequete<=nbRequest)
+			{
+				long moyServeur=0;
+				acq_sem(semid, seg_dispo);
+
+				seg->tty=getpid();
+				seg->req=cmptRequete;
+				long moy=0;
+				for(int i=0;i<maxval;i++)
+				{
+					seg->tab[i]=getrand();
+					moy+=seg->tab[i];
+				}
+				moy/=maxval;//Calcul de la moyenne en local par le client
+
+				acq_sem(semid, seg_init);
+						
+				wait_sem(semid, res_ok);
+
+				moyServeur=seg->result;//Acquisition du résultat stocké par le serveur
+
+				lib_sem(semid, seg_init);
+
+				acq_sem(semid, res_ok);
+				lib_sem(semid, res_ok);
+
+				lib_sem(semid, seg_dispo);
+				cmptRequete+=1; //COmpteur du nombre de requêtes faite au serveur par un seul client
+
+				if(moy==moyServeur)
+				{
+					//printf("On a le même résultat\n");
+				}
+				else
+				{
+					//printf("Les résultats sont différents\n");
+				}
+				//printf("Résultat local : %ld\n", moy);
+				//printf("Résultat serveur : %ld\n", seg->result);
 				
-		wait_sem(semid, res_ok);
 
-		if(moy==seg->result)
-		{
-			printf("On a le même résultat\n");
+			}
+			
+			shmdt(seg);
+			//kill(pid, SIGKILL);
+			//kill(getpid(), SIGKILL);
+		}else{
+			//kill(getgid(),SIGKILL);
 		}
-		else
-		{
-			printf("Les résultats sont différents\n");
-		}
-		printf("Résultat local : %ld\n", moy);
-		printf("Résultat serveur : %ld\n", seg->result);	
-
-		lib_sem(semid, seg_init);
-
-		acq_sem(semid, res_ok);
-		lib_sem(semid, res_ok);
-
-		lib_sem(semid, seg_dispo);
-		cmptRequete+=1;
 	}
-	
-	shmdt(seg);
 	return 0;
 }
