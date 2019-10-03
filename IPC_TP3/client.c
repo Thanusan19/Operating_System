@@ -6,7 +6,7 @@ int shmid, semid;
 segment *seg;
 
 /*********************************************************/
-/*FONction d'initilisation des segments et des semaphores*/
+/*Fonction d'initialisation des segments et des sémaphores*/
 /*********************************************************/	
 void init()
 {	
@@ -36,17 +36,18 @@ void init()
 		exit(1);
 	}
 	
+	//Initialisaion du générateur
 	init_rand();
 }
 
 /*************************************************/
-/*Acquisition du semaphore*/
+/*Acquisition du sémaphore*/
 /*************************************************/
 void acq_sem_3is(int semid,int SEMO)
 {
 	struct sembuf sb;
 	sb.sem_num=SEMO;
-	//Acquisition du semaphore == -1
+	//Acquisition du sémaphore == -1
 	sb.sem_op=-1;
 	sb.sem_flg=SEM_UNDO;
 	if(semop(semid,&sb,1)==-1)
@@ -57,12 +58,12 @@ void acq_sem_3is(int semid,int SEMO)
 }
 
 /*************************************************/
-/*Libérerle semaphore*/
+/*Libérer le sémaphore*/
 /*************************************************/
 void lib_sem_3is(int semid,int SEMO){
 	struct sembuf sb;
 	sb.sem_num=SEMO;
-	//Acquisition du semaphore == -1
+	//Acquisition du sémaphore == -1
 	sb.sem_op=1;
 	sb.sem_flg=SEM_UNDO;
 	if(semop(semid,&sb,1)==-1)
@@ -73,13 +74,13 @@ void lib_sem_3is(int semid,int SEMO){
 }
 
 /*************************************************/
-/*Attente de la libération d'un semaphore*/
+/*Attente de la libération d'un sémaphore*/
 /*************************************************/
 void wait_sem_3is(int semid,int SEMO){
 	int semVal=semctl(semid,SEMO,GETVAL);
-	//Tant que le semaphore est prit
-	/*  1---> semaphore prit
-		0---> semaphore libre*/
+	//Tant que le sémaphore est pris
+	/*  1---> sémaphore pris
+		0---> sémaphore libre*/
 	while(semVal!=0)
 	{
 		semVal=semctl(semid,SEMO,GETVAL);
@@ -94,15 +95,16 @@ void wait_sem_3is(int semid,int SEMO){
 int main()
 {	
 	init();
-	int forkNumber=10;
+	//Nombre de clients qui vont appeler le serveur
+	int forkNumber=1024;
 	
 	for (int i = 0; i < forkNumber; i++)
 	{
 		int pid;
 		pid=fork();
 		
-
-		if(pid!=0){ //le père
+		if(pid!=0)//le père
+		{ 
 			int cmptRequete=1;
 			int nbRequest=10;
 
@@ -112,11 +114,13 @@ int main()
 			while(cmptRequete<=nbRequest)
 			{
 				long moyServeur=0;
+				long moy=0;
+
+				//Demande d'acquisition du segment
 				acq_sem_3is(semid, seg_dispo);
 
 				seg->tty=getpid();
 				seg->req=cmptRequete;
-				long moy=0;
 				for(int i=0;i<maxval;i++)
 				{
 					seg->tab[i]=getrand();
@@ -124,19 +128,22 @@ int main()
 				}
 				moy/=maxval;//Calcul de la moyenne en local par le client
 
+				//Vérification de l'initialisation du segment
 				acq_sem_3is(semid, seg_init);
 						
+				//Attente de la complétion du calcul côté serveur
 				wait_sem_3is(semid, res_ok);
 
-				moyServeur=seg->result;//Acquisition du résultat stocké par le serveur
+				moyServeur=seg->result;//Acquisition du résultat de la moyenne stocké par le serveur
 
+				/*Libération des différents sémaphores*/
 				lib_sem_3is(semid, seg_init);
 
 				acq_sem_3is(semid, res_ok);
 				lib_sem_3is(semid, res_ok);
 
 				lib_sem_3is(semid, seg_dispo);
-				cmptRequete+=1; //COmpteur du nombre de requêtes faite au serveur par un seul client
+				cmptRequete+=1; //Compteur du nombre de requêtes faite au serveur par un seul client
 
 				if(moy==moyServeur)
 				{
@@ -146,15 +153,16 @@ int main()
 				{
 					printf("Les résultats sont différents\n");
 				}				
-
 			}
-			
 		}
-		else if(pid==0)
+		else
 		{
+			//Tue les processus fils pour ne garder que les processus père
 			kill(getpid(),SIGKILL);
 		}
 	}
+	
+	//Détachement du segment mémoire
 	shmdt(seg);
 	return 0;
 }
