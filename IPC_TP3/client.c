@@ -63,7 +63,7 @@ void acq_sem_3is(int semid,int SEMO)
 void lib_sem_3is(int semid,int SEMO){
 	struct sembuf sb;
 	sb.sem_num=SEMO;
-	//Acquisition du sémaphore == -1
+	//Libération du sémaphore == 1
 	sb.sem_op=1;
 	sb.sem_flg=SEM_UNDO;
 	if(semop(semid,&sb,1)==-1)
