@@ -38,6 +38,7 @@ int main()
     void *mmappedData = mmap(NULL, fileStat.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     printf("Adresse de la mmap: %p\n\n",mmappedData);
 
+    //Récupération des informations sur le système de fichier: SUPERBLOCK
     struct tosfs_superblock* SB;
     SB = (struct tosfs_superblock*) mmappedData;
 
@@ -50,6 +51,7 @@ int main()
     printf("Inodes : %d\n",SB->inodes);
     printf("Root inode : %d\n\n",SB->root_inode);
 
+    //Récupération des numéros d'inodes et d'autres informations (pointeur vers les fichiers) associés aux différents fichiers
     struct tosfs_inode *inode;
     inode = (struct tosfs_inode*) ((void*) SB + SB->block_size);
 
@@ -67,6 +69,7 @@ int main()
     }
     printf("\n");
 
+    //Récupération des noms ou liens vers les fichiers
     struct tosfs_dentry *dentry;
     dentry = (struct tosfs_dentry*) ((void*) SB + SB->block_size*2); 
 
